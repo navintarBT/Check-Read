@@ -1,8 +1,11 @@
 jQuery.noConflict();
-(async function ($, Swal10, PLUGIN_ID) {
+(async function ($, PLUGIN_ID) {
+  "use strict";
   let CONFIG = kintone.plugin.app.getConfig(PLUGIN_ID).config;
 
   if (!CONFIG) return;
   CONFIG = JSON.parse(kintone.plugin.app.getConfig(PLUGIN_ID).config);
-  
-})(jQuery, Sweetalert2_10.noConflict(true), kintone.$PLUGIN_ID);
+  kintone.events.on("app.record.index.show", async () => {
+    console.log("CONFIG");
+  });
+})(jQuery, kintone.$PLUGIN_ID);
