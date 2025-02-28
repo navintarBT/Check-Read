@@ -102,6 +102,9 @@ tbody tr {
 #kintoneplugin-setting-space #td-table-space-prompt-template-button {
   width: 70%;
 }
+#kintoneplugin-setting-search #td-table-space-prompt-template-button {
+  width: 35%;
+}
 
 #kintoneplugin-setting-space .kintoneplugin-table-td-operation.operation-column {
   width: 100px !important;

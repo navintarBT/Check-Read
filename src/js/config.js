@@ -56,6 +56,9 @@ jQuery.noConflict();
 					$("select#store_field").append(
 						$("<option>").attr("value", items.code).attr("title", items.label).text(`${items.label}(${items.code}) `)
 					);
+					$("select#field_search").append(
+						$("<option>").attr("value", items.code).attr("title", items.label).text(`${items.label}(${items.code}) `)
+					);
 				}
 			});
 
@@ -81,13 +84,24 @@ jQuery.noConflict();
 			let initialValue = $(this).find("#initial_value").val();
 			return { type, space, storeField, format, initialValue };
 		}).get();
+		let searchContent = $("#kintoneplugin-setting-search > tr:gt(0)").map(function () {
+			let fieldSearch = {
+				code: $(this).find("#field_search").val(),
+				label: $(this).find("#field_search option:selected").attr("title")
+			}
+			let searchName = $(this).find("#search_name").val();
+			return { fieldSearch, searchName };
+		}).get();
 		return {
-			formatSetting
+			formatSetting,
+			searchContent
 		};
 	}
+	console.log(getData);
 
 	async function setValueToTable(getConfig) {
 		getConfig.formatSetting.forEach((item) => {
+			console.log(item);
 			let rowForClone = $("#kintoneplugin-setting-tspace tr:first-child").clone(true).removeAttr("hidden");
 			$("#kintoneplugin-setting-tspace tr:last-child").after(rowForClone);
 			rowForClone.find("#initial_value").val(item.initialValue);
@@ -118,6 +132,18 @@ jQuery.noConflict();
 			} else {
 				rowForClone.find("#format").val(item.format);
 			}
+		})
+		getConfig.searchContent.forEach((item) => {
+			let rowSearchContent = $("#kintoneplugin-setting-search tr:first-child").clone(true).removeAttr("hidden");
+			$("#kintoneplugin-setting-search tr:last-child").after(rowSearchContent);
+			rowSearchContent.find("#search_name").val(item.searchName);
+
+			//check type dropdown
+			if ($(rowSearchContent).find('select#field_search option[value="' + item.fieldSearch.code + '"]').length == 0) {
+				rowSearchContent.find("#field_search").val("-----");
+			} else {
+				rowSearchContent.find("#field_search").val(item.fieldSearch.code);
+			}
 
 		})
 	}
@@ -130,6 +156,9 @@ jQuery.noConflict();
 				$("#kintoneplugin-setting-tspace tr:first-child").after(
 					$("#kintoneplugin-setting-tspace tr:first-child").clone(true).removeAttr("hidden")
 				)
+				$("#kintoneplugin-setting-search tr:first-child").after(
+					$("#kintoneplugin-setting-search tr:first-child").clone(true).removeAttr("hidden")
+				)
 				checkRow();
 				return;
 			} else {
@@ -139,8 +168,8 @@ jQuery.noConflict();
 		} else {
 			// Clear all rows except the first row of table space for prompt template and button and table setting prompt template.
 			$("#kintoneplugin-setting-tspace > tr:not(:first)").remove();
+			$("#kintoneplugin-setting-search > tr:not(:first)").remove();
 			getConfig = setInitial;
-
 			await setValueToTable(getConfig);
 		}
 		checkRow();
@@ -148,31 +177,41 @@ jQuery.noConflict();
 
 	// check row function.
 	function checkRow() {
-		let rows = $("#kintoneplugin-setting-tspace > tr");
-		if (rows.length <= 2) {
-			rows.find(".removeRow").hide();
-		} else {
-			rows.find(".removeRow").show();
-		}
+		const tablesId = [
+			"#kintoneplugin-setting-tspace",
+			"#kintoneplugin-setting-search",
+		];
+		$.each(tablesId, function (index, id) {
+			let rows = $(id + " > tr");
+			if (rows.length <= 2) {
+				rows.find(".removeRow").hide();
+			} else {
+				rows.find(".removeRow").show();
+			}
+		});
 	}
 	// validate update function.
 	async function validation() {
 		let hasError = false;
 		let errorMessage = "";
+		let errorSearchContent = "";
 		let storeFiledArray = [];
+		let fieldSearchArray = [];
 		let spaceArray = [];
 		//group setting table
 		let formatSettingTable = $('#kintoneplugin-setting-tspace > tr:gt(0)').toArray();
+		let searchContentTable = $('#kintoneplugin-setting-search > tr:gt(0)').toArray();
 		let typeError = "";
 		let storeFieldError = "";
 		let spaceError = "";
+		let searchNameError = "";
+		let fieldSearchError = "";
 		for (const [index, element] of formatSettingTable.entries()) {
 			let type = $(element).find('#type');
 			let space = $(element).find('#space');
 			let storeField = $(element).find('#store_field');
-			let format = $(element).find('#format');
 			if (type.val() == "-----") {
-				typeError = `<p>タイプを選択してください。</p>`;
+				typeError = `<p>Please select a type.</p>`;
 				$(type).parent().addClass('validation-error');
 				hasError = true;
 			} else {
@@ -185,13 +224,13 @@ jQuery.noConflict();
 					spaceArray.push(space.val());
 				} else {
 					$(space).parent().addClass('validation-error');
-					spaceError = `<p>同じスペースを選択できません</p>`;
+					spaceError = `<p>Cannot select the same space</p>`;
 					hasError = true;
 				}
 			}
 
 			if (storeField.val() == "-----") {
-				storeFieldError = `<p>格納フィールドを選択してください。</p>`;
+				storeFieldError = `<p>Select the storage field.</p>`;
 				$(storeField).parent().addClass('validation-error');
 				hasError = true;
 			} else {
@@ -201,22 +240,60 @@ jQuery.noConflict();
 					storeFiledArray.push(storeField.val());
 				} else {
 					$(storeField).parent().addClass('validation-error');
-					errorMessage += `<p>検索対象フィールド「${storeField.val()}」はすでに存在しています。</p>`;
+					errorMessage += `<p>The field to be searched${storeField.val()}already exists.</p>`;
 					hasError = true;
 				}
 			}
 
 		}
+		for (const [index, element] of searchContentTable.entries()) {
+			let searchName = $(element).find('#search_name');
+			console.log(searchName.val());
+			let fieldSearch = $(element).find('#field_search');
+			if (searchName.val() == "") {
+				searchNameError = `<p>Search name cannot be empty</p>`;
+				$(searchName).addClass('validation-error');
+				hasError = true;
+			} else {
+				$(searchName).removeClass('validation-error');
+				if (!fieldSearchArray.includes(searchName.val().trim())) {
+					$(searchName).removeClass('validation-error');
+					fieldSearchArray.push(searchName.val());
+				} else {
+					$(searchName).addClass('validation-error');
+					errorSearchContent += `<p>The search name ${searchName.val()} already exists.</p>`;
+					hasError = true;
+				}
+			}
+
+			if (fieldSearch.val() == "-----") {
+				fieldSearchError = `<p>Please select a type field for search</p>`;
+				$(fieldSearch).parent().addClass('validation-error');
+				hasError = true;
+			} else {
+				$(fieldSearch).parent().removeClass('validation-error');
+				if (!fieldSearchArray.includes(fieldSearch.val().trim())) {
+					$(fieldSearch).parent().removeClass('validation-error');
+					fieldSearchArray.push(fieldSearch.val());
+				} else {
+					$(fieldSearch).parent().addClass('validation-error');
+					errorSearchContent += `<p>The field for search ${fieldSearch.val()} already exists.</p>`;
+					hasError = true;
+				}
+			}
+		}
 		if (typeError) errorMessage += typeError;
 		if (spaceError) errorMessage += spaceError;
 		if (storeFieldError) errorMessage += storeFieldError;
-		if (errorMessage.length > 0) errorMessage = "<p>【日付フォーマットの設定】</p>" + errorMessage;
-
+		if (searchNameError) errorSearchContent += searchNameError;
+		if (fieldSearchError) errorSearchContent += fieldSearchError;
+		if (errorMessage.length > 0) errorMessage = "<p>【Date format settings】</p>" + errorMessage;
+		if (errorSearchContent.length > 0) errorSearchContent = "<p>【Search Content】</p>" + errorSearchContent;
 
 		if (hasError) Swal10.fire({
 			position: 'center',
 			icon: 'error',
-			html: errorMessage,
+			html: errorMessage + errorSearchContent,
 			showConfirmButton: true,
 		});
 		return hasError;
@@ -233,7 +310,7 @@ jQuery.noConflict();
 		});
 
 
-		$('#kintoneplugin-setting-tspace').sortable({
+		$('#kintoneplugin-setting-tspace,#kintoneplugin-setting-search').sortable({
 			handle: '.drag-icon',  // Restrict dragging to the drag icon (bars)
 			items: 'tr:not([hidden])', // Ensure only visible rows can be dragged
 			cursor: 'move',
@@ -248,6 +325,7 @@ jQuery.noConflict();
 		// button save.
 		$('#button_save').on('click', async function () {
 			let createConfig = await getData();
+			console.log(createConfig);
 			let hasError = await validation("save", createConfig);
 			if (hasError) return;
 			let config = JSON.stringify(createConfig);
@@ -260,12 +338,12 @@ jQuery.noConflict();
 			Swal10.fire({
 				position: "center",
 				icon: "info",
-				text: "プラグインの設定を終了しますか？",
+				text: "Do you want to finish setting up the plugin?",
 				confirmButtonColor: "#3498db",
 				showCancelButton: true,
 				cancelButtonColor: "#f7f9fa",
 				confirmButtonText: "OK",
-				cancelButtonText: "キャンセル",
+				cancelButtonText: "Cancel",
 				customClass: {
 					confirmButton: 'custom-confirm-button',
 					cancelButton: 'custom-cancel-button'
@@ -304,12 +382,12 @@ jQuery.noConflict();
 				},
 				position: "center",
 				icon: "info",
-				text: "設定情報の書き出しをしますか？",
+				text: "Do you want to export configuration information?",
 				confirmButtonColor: "#3498db",
 				showCancelButton: true,
 				cancelButtonColor: "#f7f9fa",
 				confirmButtonText: "OK",
-				cancelButtonText: "キャンセル",
+				cancelButtonText: "Cancel",
 			}).then(async (result) => {
 				if (result.isConfirmed) {
 					let hasError = await validation("export", await getData());
@@ -349,7 +427,7 @@ jQuery.noConflict();
 						dataImport = JSON.parse(fileContent);
 					} catch (error) {
 						let customClass = $("<div></div>")
-							.html(`読み込み用設定情報のファイル形式はJSON形式です。<br> ファイル形式の拡張子をご確認ください。`)
+							.html(`The file format of the configuration information for reading is JSON format.<br> Please check the file format extension.`)
 							.css("font-size", "14px");
 						await Swal10.fire({
 							icon: "error",
@@ -370,7 +448,7 @@ jQuery.noConflict();
 						Swal10.fire({
 							position: 'center',
 							icon: 'success',
-							text: '正常に設定情報の読み込みしました。',
+							text: 'Configuration information loaded successfully.',
 							showConfirmButton: true,
 						});
 						$("#fileInput").val('');
@@ -393,6 +471,15 @@ jQuery.noConflict();
 						},
 						format: "string",
 						initialValue: "string"
+					}
+				],
+				searchContent: [
+					{
+						fieldSearch: {
+							code: "string",
+							label: "string",
+						},
+						searchName: "string"
 					}
 				]
 			}
@@ -449,7 +536,7 @@ jQuery.noConflict();
 			let isValid = checkAllCases(dataImport);
 			if (!isValid) {
 				let customClass = $("<div></div>")
-					.text("設定情報の読み込みに失敗しました。")
+					.text("Failed to load configuration information.")
 					.css("font-size", "18px");
 				await Swal10.fire({
 					icon: "error",

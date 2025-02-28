@@ -4,5 +4,6 @@ jQuery.noConflict();
 
   if (!CONFIG) return;
   CONFIG = JSON.parse(kintone.plugin.app.getConfig(PLUGIN_ID).config);
+  console.log(CONFIG);
   
 })(jQuery, Sweetalert2_10.noConflict(true), kintone.$PLUGIN_ID);
