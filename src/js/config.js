@@ -248,7 +248,6 @@ jQuery.noConflict();
 		}
 		for (const [index, element] of searchContentTable.entries()) {
 			let searchName = $(element).find('#search_name');
-			console.log(searchName.val());
 			let fieldSearch = $(element).find('#field_search');
 			if (searchName.val() == "") {
 				searchNameError = `<p>Search name cannot be empty</p>`;
@@ -322,6 +321,13 @@ jQuery.noConflict();
 			$(this).val($(this).val().replace(/[^0-9-]/g, ''));
 		})
 
+		$('input#search_name').on('input', function () {
+			let currentValue = $(this).val();
+			currentValue = currentValue.replace(/[^a-zA-Z0-9\s]/g, '');
+			currentValue = currentValue.replace(/\s{2,}/g, ' ');
+			$(this).val(currentValue);
+		});
+		
 		// button save.
 		$('#button_save').on('click', async function () {
 			let createConfig = await getData();

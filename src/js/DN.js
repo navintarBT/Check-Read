@@ -475,92 +475,109 @@ jQuery.noConflict();
       let elements = $("<div></div>").addClass("custom-input-date");
       let elementsLabelDate = $("<div></div>").addClass("label-and-date");
       let labelEl = $("<label></label>");
+      let inputDate;
       let field = item.fieldSearch.code;
       if (getFieldResponse.properties[field]) {
         let currentInputType = 'exact';
-        let setClass = item.searchName.replace(/\s+/g, "_");
+        let setClass =  item.searchName.replace(/\s+/g, "_");
         const inputError = $('<div>').addClass('input-error search').append(
           $('<span></span>').text("Incorrect value.")
-        ).hide();
-
-        labelEl.text(item.searchName).addClass(`label-${setClass}`).on('click', function (event) {
-          $('.popup').remove();
-          const popup = document.createElement('div');
-          popup.className = 'popup';
-          popup.innerHTML = `
-            <button class="exact">Exact</button>
-            <button class="range">Range</button>
-          `;
-          elements.append(popup);
-          event.stopPropagation();
-
-          document.addEventListener('click', function closePopup(e) {
-            if (!popup.contains(e.target)) {
-              popup.remove();
-              document.removeEventListener('click', closePopup);
-            }
-          });
-
-          // Exact
-          popup.querySelector('.exact').addEventListener('click', function (event) {
+        )
+        inputError.hide()
+        labelEl.text(item.searchName).addClass(`label-${setClass}`).on('click', function(event) {
+            $('.popup').remove();
+            const popup = document.createElement('div');
+            popup.className = 'popup';
+            popup.innerHTML = `
+                <button class="exact">Exact</button>
+                <button class="range">Range</button>
+            `;
+            elements.append(popup);
             event.stopPropagation();
-            if (currentInputType !== 'exact') {
-              elementsLabelDate.children(':not(label)').remove();
-              const dateInput = createDateInput(item.searchName);
-              dateInput.find('input').on('change', async function (e) {
-                let changeFormat = await parseDate(e.target.value.trim());
-                if (changeFormat === false) {
-                  inputError.show();
-                } else {
-                  inputError.hide();
+            
+            document.addEventListener('click', function closePopup(e) {
+                if (popup && popup instanceof HTMLElement && !popup.contains(e.target)) {
+                    popup.remove(); 
+                    document.removeEventListener('click', closePopup);
                 }
-              });
-              elementsLabelDate.append(dateInput, inputError);
-              currentInputType = 'exact';
-            }
-            popup.remove();
-          });
-
-          // Range
-          popup.querySelector('.range').addEventListener('click', function (event) {
-            event.stopPropagation();
-            if (currentInputType !== 'range') {
-              elementsLabelDate.children(':not(label)').remove();
-              const dateRange = createDateRangeInput(item.searchName);
-              dateRange.querySelectorAll('input').forEach(input => {
-                input.addEventListener('change', async function (e) {
-                  let changeFormat = await parseDate(e.target.value.trim());
-                  if (changeFormat === false) {
-                    inputError.show();
-                  } else {
-                    inputError.hide();
-                  }
-                });
-              });
-              elementsLabelDate.append(dateRange, inputError);
-              currentInputType = 'range';
-            }
-            popup.remove();
-          });
+            });
+    
+            // Exact
+            popup.querySelector('.exact').addEventListener('click', function(event) {
+                event.stopPropagation();
+                if (currentInputType !== 'exact') {
+                    elementsLabelDate.children(':not(label)').remove();
+                    const dateInput = createDateInput(item.searchName);
+                    dateInput.find('input').on('change', async function(e) {
+                      console.log(e);
+                      let changeFormat = await parseDate(e.target.value.trim());
+                      console.log(changeFormat);
+                      if (changeFormat === false) {
+                        console.log("object");
+                        inputError.show();
+                      } else {
+                        console.log("obj");
+                        inputError.hide();
+                      }
+                  });
+                    elementsLabelDate.append(dateInput);
+                    elementsLabelDate.append(inputError);
+                    currentInputType = 'exact';
+                }
+                popup.remove();
+            });
+    
+            // Range
+            popup.querySelector('.range').addEventListener('click', function(event) {
+                event.stopPropagation();
+                if (currentInputType !== 'range') {
+                    elementsLabelDate.children(':not(label)').remove();
+                    const dateRange = createDateRangeInput(item.searchName, item.searchName);
+                    dateRange.find('input').on('change', async function(e) {
+                      console.log(e);
+                      let changeFormat = await parseDate(e.target.value.trim());
+                      console.log(changeFormat);
+                      if (changeFormat === false) {
+                        console.log("object");
+                        inputError.show();
+                      } else {
+                        console.log("obj");
+                        inputError.hide();
+                      }
+                  });
+                    elementsLabelDate.append(dateRange);
+                    elementsLabelDate.append(inputError);
+                    currentInputType = 'range';
+                }
+                popup.remove();
+            });
         });
-
         elementsLabelDate.append(labelEl);
-        const dateInput = createDateInput(item.searchName);
-        dateInput.find('input').on('change', async function (e) {
+        inputDate = createDateInput(item.searchName);
+        elementsLabelDate.append(inputDate);
+        inputDate.find('input').on('change', async function(e) {
+          console.log(e);
           let changeFormat = await parseDate(e.target.value.trim());
+          console.log(changeFormat);
           if (changeFormat === false) {
+            console.log("object");
             inputError.show();
           } else {
+            console.log("obj");
             inputError.hide();
           }
-        });
-        elementsLabelDate.append(dateInput, inputError);
+      });
+        elementsLabelDate.append(inputError);
         elements.append(elementsLabelDate);
-      }
-      elementsAll.append(elements);
+        
+    }
+        elementsAll.append(elements);
+        elementsAll.append(btnSearch);
+        elementsAll.append(btnCancel);
+        $(spaceEl).append(elementsAll);
+
+    
     });
-    elementsAll.append(btnSearch, btnCancel);
-    $(spaceEl).append(elementsAll);
 
     btnSearch.on('click', async function() {
       let query = ''; 
