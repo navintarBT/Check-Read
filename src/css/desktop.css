@@ -1,7 +1,7 @@
 .options-class input {
   width: 101px !important;
 }
-.kuc-base-error-1-18-0__error{
+.kuc-base-error-1-18-0__error {
   width: 101px !important;
   /* height: 71px !important; */
 }
@@ -10,7 +10,7 @@
 }
 
 .custom-cancel-button {
-  color:  #3498db!important;
+  color: #3498db !important;
 }
 
 .swal2-content {
@@ -20,6 +20,32 @@
 
 .control-etc-gaia.control-spacer-field-gaia {
   width: 117px !important;
+}
+
+.label_date_format {
+  display: inline-block;
+  margin-right: 10px;
+  font-size: 15px;
+  font-weight: 500;
+  margin-bottom: 10px;
+}
+
+.kintoneplugin-input-text.date-input {
+  width: 150px;
+  padding: 4px;
+  margin-bottom: 8px;
+}
+
+.popup-alert{
+  width: 100%;
+  display: flex;
+  margin-top: 5px;
+  padding: 10px 0;
+  background-color: red;
+  color: white;
+  text-align: center;
+  border-radius: 3px;
+  align-items: center;
 }
 
 .label-and-date{
