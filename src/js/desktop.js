@@ -36,9 +36,6 @@ jQuery.noConflict();
       const startDateStr = JP_CALENDAR[i][0]; // The start date of the era
       const symbol = JP_CALENDAR[i][2];      // The era symbol (e.g., "R")
       const startDate = new Date(startDateStr); // The date object for the start date
-      console.log('date', date);
-      console.log('startdate', startDate);
-
       // If the given date is on or after this era start date
       if (date >= startDate) {
         eraSymbol = symbol;
@@ -368,23 +365,23 @@ jQuery.noConflict();
   );
   
 
-  function getFieldData(data, fieldCode) {
-    // Search in fieldList
-    for (const key in data.table.fieldList) {
-      if (data.table.fieldList[key].var === fieldCode) {
-        return data.table.fieldList[key];
-      }
-    }
-    // Search in subTable
-    for (const subKey in data.subTable) {
-      for (const key in data.subTable[subKey].fieldList) {
-        if (data.subTable[subKey].fieldList[key].var === fieldCode) {
-          return data.subTable[subKey].fieldList[key];
+    function getFieldData(data, fieldCode) {
+      // Search in fieldList
+      for (const key in data.table.fieldList) {
+        if (data.table.fieldList[key].var === fieldCode) {
+          return data.table.fieldList[key];
         }
       }
+      // Search in subTable
+      for (const subKey in data.subTable) {
+        for (const key in data.subTable[subKey].fieldList) {
+          if (data.subTable[subKey].fieldList[key].var === fieldCode) {
+            return data.subTable[subKey].fieldList[key];
+          }
+        }
+      }
+      return null; // Return null if not found
     }
-    return null; // Return null if not found
-  }
 
   kintone.events.on("app.record.detail.show", async (event) => {
     const schemaPage = cybozu.data.page.SCHEMA_DATA;
@@ -428,8 +425,6 @@ jQuery.noConflict();
   kintone.events.on("app.record.index.show", async (event) => {
     const schemaPage = cybozu.data.page.SCHEMA_DATA;
     let errorMessage;
-
-
     for (const item of CONFIG.formatSetting) {
       let data = getFieldData(schemaPage, item.storeField.code);
       let fields = $(`.value-${data.id}`);
@@ -471,13 +466,23 @@ jQuery.noConflict();
       app: kintone.app.getId()
     });
 
-    CONFIG.searchContent.forEach((item) => {
+    const urlObj = new URL(window.location.href);
+    const bokTerm = urlObj.searchParams.get("bokTerms");
+    let bokTermObj = JSON.parse(bokTerm);
+    if(bokTermObj == null){
+    createInputBox(getFieldResponse,CONFIG.searchContent,"initial")
+    }else{
+    createInputBox(getFieldResponse,bokTermObj)
+    }
+
+      function createInputBox (getFieldResponse,createInputDate,status) {
+      createInputDate.forEach((item) => {
       let elements = $("<div></div>").addClass("custom-input-date");
       let elementsLabelDate = $("<div></div>").addClass("label-and-date");
       let labelEl = $("<label></label>");
       let field = item.fieldSearch.code;
       if (getFieldResponse.properties[field]) {
-        let currentInputType = 'exact';
+        let currentInputType;
         let setClass = item.searchName.replace(/\s+/g, "_");
         const inputError = $('<div>').addClass('input-error search').append(
           $('<span></span>').text("Incorrect value.")
@@ -507,7 +512,7 @@ jQuery.noConflict();
             if (currentInputType !== 'exact') {
               elementsLabelDate.children(':not(label)').remove();
               const dateInput = createDateInput(item.searchName);
-              dateInput.find('input').on('change', async function (e) {
+              $(dateInput).find('input').on('change', async function (e) {
                 let changeFormat = await parseDate(e.target.value.trim());
                 if (changeFormat === false) {
                   inputError.show();
@@ -545,7 +550,20 @@ jQuery.noConflict();
         });
 
         elementsLabelDate.append(labelEl);
-        const dateInput = createDateInput(item.searchName);
+        let dateInput
+        if (status === "initial") {
+          let value = "";
+          dateInput = $(createDateInput(item.searchName, value));
+          currentInputType = 'exact'
+        }else{
+          if(item.type == "exact") {
+            dateInput = $(createDateInput(item.searchName, item.value));
+            currentInputType = 'exact'
+          }else{
+            dateInput = $(createDateRangeInput(item.searchName, item.startDate, item.endDate));
+            currentInputType = 'range'
+          }
+        }
         dateInput.find('input').on('change', async function (e) {
           let changeFormat = await parseDate(e.target.value.trim());
           if (changeFormat === false) {
@@ -561,57 +579,78 @@ jQuery.noConflict();
     });
     elementsAll.append(btnSearch, btnCancel);
     $(spaceEl).append(elementsAll);
+  }
 
     btnSearch.on('click', async function() {
+      let searchInfoList = [];
       let query = ''; 
+      let hasError = elementsAll.find('.input-error.search').filter(function() {
+        return $(this).css('display') !== 'none';
+      }).length > 0;
+      
+      if (hasError) {
+        Swal10.fire({
+          icon: 'error',
+          title: 'Invalid Input',
+          text: 'Please correct the highlighted errors before proceeding.',
+          confirmButtonText: 'OK'
+        });
+        return;
+      }
+      
       CONFIG.searchContent.forEach((item) => {
         let setClass = item.searchName.replace(/\s+/g, "_");
         let nextElement = elementsAll.find(`.label-${setClass}`).next();
         if (nextElement.length) {
           if (nextElement.hasClass('exact')) {
             let value = nextElement.find('input').val();
+            searchInfoList.push({ fieldSearch: {code: item.fieldSearch.code, label: item.fieldSearch.label}, searchName: item.searchName, value: value, type: 'exact' });
             if (value) {
-              query += `(${item.fieldSearch.code} = "${value}") AND `;
+              query += `(${item.fieldSearch.code} = "${value}") and `;
             }
           } else if (nextElement.hasClass('date-range')) {
             let startDate = nextElement.find('input').first().val();
             let endDate = nextElement.find('input').last().val();
+            searchInfoList.push({ fieldSearch:{code:item.fieldSearch.code,label: item.fieldSearch.label},searchName:item.searchName, startDate: startDate, endDate: endDate, type: 'range' });
             if (startDate && endDate) {
-              query += `(${item.fieldSearch.code} >= "${startDate}" AND ${item.fieldSearch.code} <= "${endDate}") AND `;
+              query += `((${item.fieldSearch.code} >= "${startDate}") and (${item.fieldSearch.code} <= "${endDate}")) and `;
+            } else if (startDate) {
+              query += `(${item.fieldSearch.code} >= "${startDate}") and `;
+            } else if (endDate) {
+              query += `(${item.fieldSearch.code} <= "${endDate}") and `;
             }
-          } else {
-            console.log('Not exact or range');
-          }
+        }
         }
       });
-      query = query.replace(/ AND $/, '');
-      console.log('Generated Query:', query);
-      await searchProcess(query);
+      query = query.replace(/ and $/, '');
+      await searchProcess(query,searchInfoList);
     });
     
-
-    let searchProcess = async function (query) {
-      console.log(query);
+    let searchProcess = async function (query,searchInfoList) {
+      const bokTermsString = JSON.stringify(searchInfoList);
       let queryEscape = encodeURIComponent(query);
+      const bokTerms = encodeURIComponent(bokTermsString);
       const newUrl = new URL(window.location.href);
       const baseUrl = `${newUrl.origin}${newUrl.pathname}`;
       const currentUrlBase = baseUrl;
-      let url = currentUrlBase + `?view=${event.viewId}${queryEscape ? "&query=" + queryEscape : ""}`;
+      let url = currentUrlBase + `?view=${event.viewId}${queryEscape ? "&query=" + queryEscape : ""}&bokTerms=${bokTerms}`;
       window.location.href = url;
     };
 
-    function createDateInput(searchName) {
+    function createDateInput(searchName,value) {
       let dateInput = searchName.replace(/\s+/g, "_");
-      const datePicker = $('<div></div>').addClass('input-date-cybozu exact').append($('<input>').attr('type', 'text').attr('id', `${dateInput}`).addClass('input-date-text-cybozu exact'));
+      const datePicker = $('<div></div>').addClass('input-date-cybozu exact').append($('<input>').attr('type', 'text').attr('id', `${dateInput}`).val(value).addClass('input-date-text-cybozu exact'));
       return datePicker;
     }
 
-    function createDateRangeInput(searchName) {
+    function createDateRangeInput(searchName, startDate, endDate) {
       let dateRange = searchName.replace(/\s+/g, "_");
       const datePickerStart = $('<div></div>').addClass('input-date-cybozu').append(
-        $('<input>').attr('type', 'text').attr('id', `${dateRange}_start`).addClass('input-date-text-cybozu range'));
+        $('<input>').attr('type', 'text').attr('id', `${dateRange}_start`).addClass('input-date-text-cybozu range').val(startDate)
+      );
       const datePickerEnd = $('<div></div>').addClass('input-date-cybozu').append(
-        $('<input>').attr('type', 'text').attr('id', `${dateRange}_end`).addClass('input-date-text-cybozu range'));
+        $('<input>').attr('type', 'text').attr('id', `${dateRange}_end`).addClass('input-date-text-cybozu range').val(endDate)
+      );
       const separator = document.createElement('span');
       separator.textContent = ' ~ ';
       const wrapper = document.createElement('div');

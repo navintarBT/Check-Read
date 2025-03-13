@@ -103,23 +103,27 @@ jQuery.noConflict();
 			$("#kintoneplugin-setting-tspace tr:last-child").after(rowForClone);
 			rowForClone.find("#initial_value").val(item.initialValue);
 
+			//check type dropdown
 			if ($(rowForClone).find('select#type option[value="' + item.type + '"]').length == 0) {
 				rowForClone.find("#type").val("-----");
 			} else {
 				rowForClone.find("#type").val(item.type);
 			}
+			//check space dropdown
 			if ($(rowForClone).find('select#space option[value="' + item.space + '"]').length == 0) {
 				rowForClone.find("#space").val("-----");
 			} else {
 				rowForClone.find("#space").val(item.space);
 			}
 
+			//check store field dropdown
 			if ($(rowForClone).find('select#store_field option[value="' + item.storeField.code + '"]').length == 0) {
 				rowForClone.find("#store_field").val("-----");
 			} else {
 				rowForClone.find("#store_field").val(item.storeField.code);
 			}
 
+			//check format dropdown
 			if ($(rowForClone).find('select#format option[value="' + item.format + '"]').length == 0) {
 				rowForClone.find("#format").val("-----");
 			} else {
@@ -130,6 +134,8 @@ jQuery.noConflict();
 			let rowSearchContent = $("#kintoneplugin-setting-search tr:first-child").clone(true).removeAttr("hidden");
 			$("#kintoneplugin-setting-search tr:last-child").after(rowSearchContent);
 			rowSearchContent.find("#search_name").val(item.searchName);
+
+			//check type dropdown
 			if ($(rowSearchContent).find('select#field_search option[value="' + item.fieldSearch.code + '"]').length == 0) {
 				rowSearchContent.find("#field_search").val("-----");
 			} else {
@@ -157,6 +163,7 @@ jQuery.noConflict();
 				await setValueToTable(getConfig);
 			}
 		} else {
+			// Clear all rows except the first row of table space for prompt template and button and table setting prompt template.
 			$("#kintoneplugin-setting-tspace > tr:not(:first)").remove();
 			$("#kintoneplugin-setting-search > tr:not(:first)").remove();
 			getConfig = setInitial;
@@ -180,17 +187,17 @@ jQuery.noConflict();
 			}
 		});
 	}
-
 	// validate update function.
 	async function validation() {
-		let formatSettingTable = $('#kintoneplugin-setting-tspace > tr:gt(0)').toArray();
-		let searchContentTable = $('#kintoneplugin-setting-search > tr:gt(0)').toArray();
 		let hasError = false;
 		let errorMessage = "";
 		let errorSearchContent = "";
 		let storeFiledArray = [];
 		let fieldSearchArray = [];
 		let spaceArray = [];
+		//group setting table
+		let formatSettingTable = $('#kintoneplugin-setting-tspace > tr:gt(0)').toArray();
+		let searchContentTable = $('#kintoneplugin-setting-search > tr:gt(0)').toArray();
 		let typeError = "";
 		let storeFieldError = "";
 		let spaceError = "";
@@ -236,7 +243,6 @@ jQuery.noConflict();
 			}
 
 		}
-
 		for (const [index, element] of searchContentTable.entries()) {
 			let searchName = $(element).find('#search_name');
 			let fieldSearch = $(element).find('#field_search');
@@ -272,7 +278,6 @@ jQuery.noConflict();
 				}
 			}
 		}
-
 		if (typeError) errorMessage += typeError;
 		if (spaceError) errorMessage += spaceError;
 		if (storeFieldError) errorMessage += storeFieldError;
@@ -280,6 +285,7 @@ jQuery.noConflict();
 		if (fieldSearchError) errorSearchContent += fieldSearchError;
 		if (errorMessage.length > 0) errorMessage = "<p>【Date format settings】</p>" + errorMessage;
 		if (errorSearchContent.length > 0) errorSearchContent = "<p>【Search Content】</p>" + errorSearchContent;
+
 		if (hasError) Swal10.fire({
 			position: 'center',
 			icon: 'error',
@@ -288,6 +294,7 @@ jQuery.noConflict();
 		});
 		return hasError;
 	}
+
 
 	//function start when open the plugin.
 	$(document).ready(function () {
@@ -298,9 +305,10 @@ jQuery.noConflict();
 			window.RsComAPI.hideSpinner();
 		});
 
+
 		$('#kintoneplugin-setting-tspace,#kintoneplugin-setting-search').sortable({
-			handle: '.drag-icon',
-			items: 'tr:not([hidden])', 
+			handle: '.drag-icon',  // Restrict dragging to the drag icon (bars)
+			items: 'tr:not([hidden])', // Ensure only visible rows can be dragged
 			cursor: 'move',
 			placeholder: 'ui-state-highlight',
 			axis: 'y'
@@ -328,7 +336,6 @@ jQuery.noConflict();
 			});
 		});
 
-		//cancel button
 		$(".cancel").on('click', async function () {
 			Swal10.fire({
 				position: "center",
@@ -356,6 +363,7 @@ jQuery.noConflict();
 			let closestTbody = $(this).closest("tbody");
 			let clonedRow = closestTbody.find("tr").first().clone(true).removeAttr("hidden");
 			if (closestTable.is("#kintoneplugin-setting-body"));
+			// Insert the cloned row after the current clicked row
 			$(this).closest("tr").after(clonedRow);
 			checkRow();
 		});
@@ -513,12 +521,16 @@ jQuery.noConflict();
 			}
 
 			function checkAllCases(dataImport) {
+				// Check if the object is empty
 				if (Object.keys(dataImport).length === 0) {
 					return false;
 				}
+
+				// Specific checks for required keys and data types
 				if (!checkType(configStructure, dataImport)) {
 					return false;
 				}
+
 				return true;
 			}
 
