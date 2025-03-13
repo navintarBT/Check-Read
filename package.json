@@ -6,7 +6,7 @@
     "develop": "npm run build -- --watch",
     "build": "kintone-plugin-packer --ppk private.ppk --out dist/plugin.zip src",
     "lint": "eslint src",
-    "upload": "kintone-plugin-uploader dist/plugin.zip --watch --waiting-dialog-ms 3000 --base-url=https://owa04scptedl.cybozu.com/ --username=nosala888@gmail.com --password=cqag02aa"
+    "upload": "kintone-plugin-uploader dist/plugin.zip --watch --waiting-dialog-ms 3000 --base-url=https://0j6moacmw7y0.cybozu.com/ --username=tarcoinbit@gmail.com --password=bt249900"
   },
   "devDependencies": {
     "@cybozu/eslint-config": "^23.0.0",

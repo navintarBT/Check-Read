@@ -351,6 +351,213 @@ jQuery.noConflict();
         customClass: { confirmButton: "custom-confirm-button" },
       });
     }
+    //__________________________________________________________________
+    const spaceEl = kintone.app.getHeaderMenuSpaceElement();
+    if ($(spaceEl).find(".custom-space-el").length > 0) {
+      return;
+    }
+    const elementsAll = $("<div></div>").addClass("custom-space-el");
+    let btnSearch =$("<button></button>").addClass("kintoneplugin-button-dialog-ok search").text("Search");
+    let btnCancel =$("<button></button>").addClass("kintoneplugin-button-dialog-ok cancel").text("Cancel");
+    let getFieldResponse = await kintone.api("/k/v1/preview/app/form/fields", "GET", {
+      app: kintone.app.getId()
+    });
+
+    const urlObj = new URL(window.location.href);
+    const bokTerm = urlObj.searchParams.get("bokTerms");
+    let bokTermObj = JSON.parse(bokTerm);
+    if(bokTermObj == null){
+    createInputBox(getFieldResponse,CONFIG.searchContent,"initial")
+    }else{
+    createInputBox(getFieldResponse,bokTermObj)
+    }
+
+      function createInputBox (getFieldResponse,createInputDate,status) {
+      createInputDate.forEach((item) => {
+      let elements = $("<div></div>").addClass("custom-input-date");
+      let elementsLabelDate = $("<div></div>").addClass("label-and-date");
+      let labelEl = $("<label></label>");
+      let field = item.fieldSearch.code;
+      if (getFieldResponse.properties[field]) {
+        let currentInputType;
+        let setClass = item.searchName.replace(/\s+/g, "_");
+        const inputError = $('<div>').addClass('input-error search').append(
+          $('<span></span>').text("Incorrect value.")
+        ).hide();
+
+        labelEl.text(item.searchName).addClass(`label-${setClass}`).on('click', function (event) {
+          $('.popup').remove();
+          const popup = document.createElement('div');
+          popup.className = 'popup';
+          popup.innerHTML = `
+            <button class="exact">Exact</button>
+            <button class="range">Range</button>
+          `;
+          elements.append(popup);
+          event.stopPropagation();
+
+          document.addEventListener('click', function closePopup(e) {
+            if (!popup.contains(e.target)) {
+              popup.remove();
+              document.removeEventListener('click', closePopup);
+            }
+          });
+
+          // Exact
+          popup.querySelector('.exact').addEventListener('click', function (event) {
+            event.stopPropagation();
+            if (currentInputType !== 'exact') {
+              elementsLabelDate.children(':not(label)').remove();
+              const dateInput = createDateInput(item.searchName);
+              $(dateInput).find('input').on('change', async function (e) {
+                let changeFormat = await parseDate(e.target.value.trim());
+                if (changeFormat === false) {
+                  inputError.show();
+                } else {
+                  inputError.hide();
+                }
+              });
+              elementsLabelDate.append(dateInput, inputError);
+              currentInputType = 'exact';
+            }
+            popup.remove();
+          });
+
+          // Range
+          popup.querySelector('.range').addEventListener('click', function (event) {
+            event.stopPropagation();
+            if (currentInputType !== 'range') {
+              elementsLabelDate.children(':not(label)').remove();
+              const dateRange = createDateRangeInput(item.searchName);
+              dateRange.querySelectorAll('input').forEach(input => {
+                input.addEventListener('change', async function (e) {
+                  let changeFormat = await parseDate(e.target.value.trim());
+                  if (changeFormat === false) {
+                    inputError.show();
+                  } else {
+                    inputError.hide();
+                  }
+                });
+              });
+              elementsLabelDate.append(dateRange, inputError);
+              currentInputType = 'range';
+            }
+            popup.remove();
+          });
+        });
+
+        elementsLabelDate.append(labelEl);
+        let dateInput
+        if (status === "initial") {
+          let value = "";
+          dateInput = $(createDateInput(item.searchName, value));
+          currentInputType = 'exact'
+        }else{
+          if(item.type == "exact") {
+            dateInput = $(createDateInput(item.searchName, item.value));
+            currentInputType = 'exact'
+          }else{
+            dateInput = $(createDateRangeInput(item.searchName, item.startDate, item.endDate));
+            currentInputType = 'range'
+          }
+        }
+        dateInput.find('input').on('change', async function (e) {
+          let changeFormat = await parseDate(e.target.value.trim());
+          if (changeFormat === false) {
+            inputError.show();
+          } else {
+            inputError.hide();
+          }
+        });
+        elementsLabelDate.append(dateInput, inputError);
+        elements.append(elementsLabelDate);
+      }
+      elementsAll.append(elements);
+    });
+    elementsAll.append(btnSearch, btnCancel);
+    $(spaceEl).append(elementsAll);
+  }
+
+    btnSearch.on('click', async function() {
+      let searchInfoList = [];
+      let query = ''; 
+      let hasError = elementsAll.find('.input-error.search').filter(function() {
+        return $(this).css('display') !== 'none';
+      }).length > 0;
+      
+      if (hasError) {
+        Swal10.fire({
+          icon: 'error',
+          title: 'Invalid Input',
+          text: 'Please correct the highlighted errors before proceeding.',
+          confirmButtonText: 'OK'
+        });
+        return;
+      }
+      
+      CONFIG.searchContent.forEach((item) => {
+        let setClass = item.searchName.replace(/\s+/g, "_");
+        let nextElement = elementsAll.find(`.label-${setClass}`).next();
+        if (nextElement.length) {
+          if (nextElement.hasClass('exact')) {
+            let value = nextElement.find('input').val();
+            searchInfoList.push({ fieldSearch: {code: item.fieldSearch.code, label: item.fieldSearch.label}, searchName: item.searchName, value: value, type: 'exact' });
+            if (value) {
+              query += `(${item.fieldSearch.code} = "${value}") and `;
+            }
+          } else if (nextElement.hasClass('date-range')) {
+            let startDate = nextElement.find('input').first().val();
+            let endDate = nextElement.find('input').last().val();
+            searchInfoList.push({ fieldSearch:{code:item.fieldSearch.code,label: item.fieldSearch.label},searchName:item.searchName, startDate: startDate, endDate: endDate, type: 'range' });
+            if (startDate && endDate) {
+              query += `((${item.fieldSearch.code} >= "${startDate}") and (${item.fieldSearch.code} <= "${endDate}")) and `;
+            } else if (startDate) {
+              query += `(${item.fieldSearch.code} >= "${startDate}") and `;
+            } else if (endDate) {
+              query += `(${item.fieldSearch.code} <= "${endDate}") and `;
+            }
+        }
+        }
+      });
+      query = query.replace(/ and $/, '');
+      await searchProcess(query,searchInfoList);
+    });
+    
+    let searchProcess = async function (query,searchInfoList) {
+      const bokTermsString = JSON.stringify(searchInfoList);
+      let queryEscape = encodeURIComponent(query);
+      const bokTerms = encodeURIComponent(bokTermsString);
+      const newUrl = new URL(window.location.href);
+      const baseUrl = `${newUrl.origin}${newUrl.pathname}`;
+      const currentUrlBase = baseUrl;
+      let url = currentUrlBase + `?view=${event.viewId}${queryEscape ? "&query=" + queryEscape : ""}&bokTerms=${bokTerms}`;
+      window.location.href = url;
+    };
+
+    function createDateInput(searchName,value) {
+      let dateInput = searchName.replace(/\s+/g, "_");
+      const datePicker = $('<div></div>').addClass('input-date-cybozu exact').append($('<input>').attr('type', 'text').attr('id', `${dateInput}`).val(value).addClass('input-date-text-cybozu exact'));
+      return datePicker;
+    }
+
+    function createDateRangeInput(searchName, startDate, endDate) {
+      let dateRange = searchName.replace(/\s+/g, "_");
+      const datePickerStart = $('<div></div>').addClass('input-date-cybozu').append(
+        $('<input>').attr('type', 'text').attr('id', `${dateRange}_start`).addClass('input-date-text-cybozu range').val(startDate)
+      );
+      const datePickerEnd = $('<div></div>').addClass('input-date-cybozu').append(
+        $('<input>').attr('type', 'text').attr('id', `${dateRange}_end`).addClass('input-date-text-cybozu range').val(endDate)
+      );
+      const separator = document.createElement('span');
+      separator.textContent = ' ~ ';
+      const wrapper = document.createElement('div');
+      wrapper.style.display = 'flex';
+      wrapper.classList.add('date-range');
+      wrapper.appendChild(datePickerStart[0]);
+      wrapper.appendChild(separator);
+      wrapper.appendChild(datePickerEnd[0]);
+      return wrapper;
+    }
     return event;
   });
 })(jQuery, Sweetalert2_10.noConflict(true), kintone.$PLUGIN_ID);
