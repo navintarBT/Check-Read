@@ -463,6 +463,9 @@ jQuery.noConflict();
         }
         dateInput.find('input').on('change', async function (e) {
           let changeFormat = await parseDate(e.target.value.trim());
+          console.log(changeFormat)
+
+          
           if (changeFormat === false) {
             inputError.show();
           } else {
@@ -482,45 +485,64 @@ jQuery.noConflict();
       let searchInfoList = [];
       let query = ''; 
       let hasError = elementsAll.find('.input-error.search').filter(function() {
-        return $(this).css('display') !== 'none';
+      return $(this).css('display') !== 'none';
       }).length > 0;
       
       if (hasError) {
-        Swal10.fire({
-          icon: 'error',
-          title: 'Invalid Input',
-          text: 'Please correct the highlighted errors before proceeding.',
-          confirmButtonText: 'OK'
-        });
-        return;
+      Swal10.fire({
+        icon: 'error',
+        title: 'Invalid Input',
+        text: 'Please correct the highlighted errors before proceeding.',
+        confirmButtonText: 'OK'
+      });
+      return;
       }
       
-      CONFIG.searchContent.forEach((item) => {
+      for (const item of CONFIG.searchContent) {
+      let setClass = item.searchName.replace(/\s+/g, "_");
+      let nextElement = elementsAll.find(`.label-${setClass}`).next();
+      if (nextElement.length) {
+        if (nextElement.hasClass('exact')) {
+        let value = nextElement.find('input').val();
+        let changFormat = await parseDate(value.trim());
+        console.log(changFormat)
+        searchInfoList.push({ fieldSearch: {code: item.fieldSearch.code, label: item.fieldSearch.label}, searchName: item.searchName, value: value, type: 'exact' });
+        if (changFormat) {
+          query += `(${item.fieldSearch.code} = "${changFormat}") and `;
+        }
+        } else if (nextElement.hasClass('date-range')) {
+        let startDate = nextElement.find('input').first().val();
+        let changFormatStart = await parseDate(startDate.trim());
+        let endDate = nextElement.find('input').last().val();
+        let changFormatEnd = await parseDate(endDate.trim());
+        searchInfoList.push({ fieldSearch: {code: item.fieldSearch.code, label: item.fieldSearch.label}, searchName: item.searchName, startDate: startDate, endDate: endDate, type: 'range' });
+        if (changFormatStart && changFormatEnd) {
+          query += `((${item.fieldSearch.code} >= "${changFormatStart}") and (${item.fieldSearch.code} <= "${changFormatEnd}")) and `;
+        } else if (changFormatStart) {
+          query += `(${item.fieldSearch.code} >= "${changFormatStart}") and `;
+        } else if (changFormatEnd) {
+          query += `(${item.fieldSearch.code} <= "${changFormatEnd}") and `;
+        }
+        }
+      }
+      }
+      query = query.replace(/ and $/, '');
+      await searchProcess(query, searchInfoList);
+    });
+
+    btnCancel.on('click', function() {
+      for (const item of CONFIG.searchContent) {
         let setClass = item.searchName.replace(/\s+/g, "_");
         let nextElement = elementsAll.find(`.label-${setClass}`).next();
         if (nextElement.length) {
           if (nextElement.hasClass('exact')) {
-            let value = nextElement.find('input').val();
-            searchInfoList.push({ fieldSearch: {code: item.fieldSearch.code, label: item.fieldSearch.label}, searchName: item.searchName, value: value, type: 'exact' });
-            if (value) {
-              query += `(${item.fieldSearch.code} = "${value}") and `;
-            }
+            nextElement.find('input').val("");
           } else if (nextElement.hasClass('date-range')) {
-            let startDate = nextElement.find('input').first().val();
-            let endDate = nextElement.find('input').last().val();
-            searchInfoList.push({ fieldSearch:{code:item.fieldSearch.code,label: item.fieldSearch.label},searchName:item.searchName, startDate: startDate, endDate: endDate, type: 'range' });
-            if (startDate && endDate) {
-              query += `((${item.fieldSearch.code} >= "${startDate}") and (${item.fieldSearch.code} <= "${endDate}")) and `;
-            } else if (startDate) {
-              query += `(${item.fieldSearch.code} >= "${startDate}") and `;
-            } else if (endDate) {
-              query += `(${item.fieldSearch.code} <= "${endDate}") and `;
-            }
+            nextElement.find('input').first().val("");
+            nextElement.find('input').last().val("");
+          }
         }
-        }
-      });
-      query = query.replace(/ and $/, '');
-      await searchProcess(query,searchInfoList);
+      }
     });
     
     let searchProcess = async function (query,searchInfoList) {
