@@ -323,7 +323,6 @@ jQuery.noConflict();
   kintone.events.on("app.record.index.show", async (event) => {
     const schemaPage = cybozu.data.page.SCHEMA_DATA;
     let errorMessage;
-
     for (const item of CONFIG.formatSetting) {
       let data = getFieldData(schemaPage, item.storeField.code);
       let fields = $(`.value-${data.id}`);
@@ -338,19 +337,20 @@ jQuery.noConflict();
           $(field).find("span").text(formatDate);
         }
       }
-    }
 
-    if (errorMessage) {
-      return Swal10.fire({
-        position: "center",
-        icon: "error",
-        text: errorMessage,
-        confirmButtonColor: "#3498db",
-        showCancelButton: false,
-        confirmButtonText: "OK",
-        customClass: { confirmButton: "custom-confirm-button" },
-      });
     }
+    if (errorMessage) return Swal10.fire({
+      position: "center",
+      icon: "error",
+      text: errorMessage,
+      confirmButtonColor: "#3498db",
+      showCancelButton: false,
+      confirmButtonText: "OK",
+      customClass: {
+        confirmButton: 'custom-confirm-button',
+      }
+    })
+
     //__________________________________________________________________
     const spaceEl = kintone.app.getHeaderMenuSpaceElement();
     if ($(spaceEl).find(".custom-space-el").length > 0) {
@@ -559,5 +559,6 @@ jQuery.noConflict();
       return wrapper;
     }
     return event;
-  });
+  }
+  );
 })(jQuery, Sweetalert2_10.noConflict(true), kintone.$PLUGIN_ID);

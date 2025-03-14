@@ -96,7 +96,7 @@ jQuery.noConflict();
 			searchContent
 		};
 	}
-
+// change
 	async function setValueToTable(getConfig) {
 		getConfig.formatSetting.forEach((item) => {
 			let rowForClone = $("#kintoneplugin-setting-tspace tr:first-child").clone(true).removeAttr("hidden");
@@ -126,6 +126,7 @@ jQuery.noConflict();
 				rowForClone.find("#format").val(item.format);
 			}
 		})
+		//change
 		getConfig.searchContent.forEach((item) => {
 			let rowSearchContent = $("#kintoneplugin-setting-search tr:first-child").clone(true).removeAttr("hidden");
 			$("#kintoneplugin-setting-search tr:last-child").after(rowSearchContent);
@@ -135,7 +136,6 @@ jQuery.noConflict();
 			} else {
 				rowSearchContent.find("#field_search").val(item.fieldSearch.code);
 			}
-
 		})
 	}
 
@@ -272,7 +272,7 @@ jQuery.noConflict();
 				}
 			}
 		}
-
+// change
 		if (typeError) errorMessage += typeError;
 		if (spaceError) errorMessage += spaceError;
 		if (storeFieldError) errorMessage += storeFieldError;
@@ -310,6 +310,7 @@ jQuery.noConflict();
 			$(this).val($(this).val().replace(/[^0-9-]/g, ''));
 		})
 
+		//japan
 		$('input#search_name').on('input', function () {
 			let currentValue = $(this).val();
 			currentValue = currentValue.replace(/[^a-zA-Z0-9\s]/g, '');
