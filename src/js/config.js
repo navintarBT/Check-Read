@@ -8,8 +8,8 @@ jQuery.noConflict();
             location:"header",
             location1:"space_A",
             countDisplay:"Read:{%Num%}",
-            resetReadData:"true",
-            unreadTextColor:"back",
+            resetReadData:true,
+            unreadTextColor:"white",
             unreadBGColor:"red",
             readTextColor:"back",
             readBGColor:"blue"
