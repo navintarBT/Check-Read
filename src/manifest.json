@@ -23,6 +23,7 @@
       "js/jquery-2.2.4.min.js",
       "js/jquery-ui.js",
       "js/sweetalert2.all.js",
+      "js/jqColorPicker.min.js",
       "common/RsComAPI.js",
       "js/config.js"
     ],
