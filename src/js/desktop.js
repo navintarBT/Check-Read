@@ -125,7 +125,6 @@ jQuery.noConflict();
   });
 
   kintone.events.on("app.record.index.show", async (event) => {
-    console.log(event.records);
     const userInfo = kintone.getLoginUser();
     let query = `((appID = "${CONFIG.appId}") and (user in ("${userInfo.code}")))`;
     if (event.records && event.records.length > 0) {
@@ -140,44 +139,47 @@ jQuery.noConflict();
     });
 
     if (!dataFromMaster || dataFromMaster.length === 0) {
-        console.warn("No records found from API");
         return event;
     }
-
-    const elements = kintone.app.getFieldElements("Updated_by");
-    if (!elements) return event;
-    elements.forEach((element, index) => {
-        const eventRecord = event.records[index];
-        if (!eventRecord) return;
-        const row = element.closest("tr");
-        if (!row) return;
-        let isMatch = false;
-        for (const record of dataFromMaster) { 
-            if (CONFIG.resetReadData) {
-                if (
-                    record.appID.value == CONFIG.appId &&
-                    record.recordId.value == eventRecord.$id.value &&
-                    record.user.value.length > 0 &&
-                    record.user.value[0].code == userInfo.code &&
-                    record.revision.value == eventRecord.$revision.value
-                ) {
-                    isMatch = true;
-                    break;
-                }
-            } else {
-                if (
-                    record.appID.value == CONFIG.appId &&
-                    record.recordId.value == eventRecord.$id.value &&
-                    record.user.value.length > 0 &&
-                    record.user.value[0].code == userInfo.code
-                ) {
-                    isMatch = true;
-                    break;
+    event.records.forEach((record, index) => {
+        const fieldCodes = Object.keys(record);
+        fieldCodes.forEach(fieldCode => {
+            const elements = kintone.app.getFieldElements(fieldCode);
+            if (!elements || !elements[index]) return;
+    
+            const element = elements[index];
+            const row = element.closest("tr"); 
+            if (!row) return; 
+    
+            let isMatch = false;
+    
+            for (const masterRecord of dataFromMaster) { 
+                if (CONFIG.resetReadData) {
+                    if (
+                        masterRecord.appID.value == CONFIG.appId &&
+                        masterRecord.recordId.value == record.$id.value &&
+                        masterRecord.user.value.length > 0 &&
+                        masterRecord.user.value[0].code == userInfo.code &&
+                        masterRecord.revision.value == record.$revision.value
+                    ) {
+                        isMatch = true;
+                        break;
+                    }
+                } else {
+                    if (
+                        masterRecord.appID.value == CONFIG.appId &&
+                        masterRecord.recordId.value == record.$id.value &&
+                        masterRecord.user.value.length > 0 &&
+                        masterRecord.user.value[0].code == userInfo.code
+                    ) {
+                        isMatch = true;
+                        break;
+                    }
                 }
             }
-        }
-        row.style.backgroundColor = isMatch ? CONFIG.readBGColor : CONFIG.unreadBGColor;
-        row.style.color = isMatch ? CONFIG.readTextColor : CONFIG.unreadTextColor;
+            row.style.backgroundColor = isMatch ? CONFIG.readBGColor : CONFIG.unreadBGColor;
+            row.style.color = isMatch ? CONFIG.readTextColor : CONFIG.unreadTextColor;
+        });
     });
     return event;
 });
