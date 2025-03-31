@@ -139,9 +139,6 @@ jQuery.noConflict();
         query: query,
     });
 
-    if (!dataFromMaster || dataFromMaster.length === 0) {
-        return event;
-    }
     event.records.forEach((record, index) => {
         const fieldCodes = Object.keys(record);
         fieldCodes.forEach(fieldCode => {
