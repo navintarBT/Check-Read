@@ -5,9 +5,10 @@ jQuery.noConflict();
   let CONFIG = kintone.plugin.app.getConfig(PLUGIN_ID).config;
   if (!CONFIG) return;
   CONFIG = JSON.parse(CONFIG);
+  console.log("CONFIG",CONFIG);
 
   kintone.events.on("app.record.detail.show", async (event) => {
-
+    
     // get user login
     const userInfo = kintone.getLoginUser();
     async function checkAndCreateRecord() {
