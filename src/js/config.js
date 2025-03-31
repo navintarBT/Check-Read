@@ -74,15 +74,15 @@ jQuery.noConflict();
       const config = kintone.plugin.app.getConfig(PLUGIN_ID);
       const savedConfig = JSON.parse(config.config);
       const configData = savedConfig;
-      $("#read_db_app_id").val(configData.read_db_app_id || "");
-      $("#read_db_app_api_token").val(configData.read_db_app_api_token || "");
-      $("#display_location").val(configData.display_location || "");
-      $("#read_count_display_text").val(configData.read_count_display_text || "Read:{%Number%}");
-      $("#reset_read_data").prop("checked", !!configData.reset_read_data);
-      $("#unread-text-color").val(configData.unread_text_color || "").css("color", configData.unread_text_color);
-      $("#unread-bg-color").val(configData.unread_bg_color || "").css("color", configData.unread_bg_color);
-      $("#read-text-color").val(configData.read_text_color || "").css("color", configData.read_text_color);
-      $("#read-bg-color").val(configData.read_bg_color || "").css("color", configData.read_bg_color);
+      $("#read_db_app_id").val(configData.appId || "");
+      $("#read_db_app_api_token").val(configData.apiToken || "");
+      $("#display_location").val(configData.location || "");
+      $("#read_count_display_text").val(configData.countDisplay || "Read:{%Number%}");
+      $("#reset_read_data").prop("checked", !!configData.resetReadData);
+      $("#unread-text-color").val(configData.unreadTextColor || "").css("color", configData.unreadTextColor);
+      $("#unread-bg-color").val(configData.unreadBGColor || "").css("color", configData.unreadBGColor);
+      $("#read-text-color").val(configData.readTextColor || "").css("color", configData.readTextColor);
+      $("#read-bg-color").val(configData.readBGColor || "").css("color", configData.readBGColor);
     }
 
     eventOnchangeColor() {
@@ -107,19 +107,19 @@ jQuery.noConflict();
     handleSubmit(e) {
       e.preventDefault();
       const configData = {
-        read_db_app_id: $("#read_db_app_id").val(),
-        read_db_app_api_token: $("#read_db_app_api_token").val(),
-        display_location: $("#display_location").val(),
-        read_count_display_text: $("#read_count_display_text").val(),
-        reset_read_data: $("#reset_read_data").is(":checked"),
-        unread_text_color: $("#unread-text-color").val(),
-        unread_bg_color: $("#unread-bg-color").val(),
-        read_text_color: $("#read-text-color").val(),
-        read_bg_color: $("#read-bg-color").val(),
+        appId: $("#read_db_app_id").val(),
+        apiToken: $("#read_db_app_api_token").val(),
+        location: $("#display_location").val(),
+        countDisplay: $("#read_count_display_text").val(),
+        resetReadData: $("#reset_read_data").is(":checked"),
+        unreadTextColor: $("#unread-text-color").val(),
+        unreadBGColor: $("#unread-bg-color").val(),
+        readTextColor: $("#read-text-color").val(),
+        readBGColor: $("#read-bg-color").val(),
       };
 
       let isValid = true;
-      if (!configData.read_db_app_id) {
+      if (!configData.appId) {
         isValid = false;
         Swal10.fire({
           position: 'center',
@@ -128,7 +128,7 @@ jQuery.noConflict();
           showConfirmButton: true,
         });
         $("#read_db_app_id").css("border-color", "red");
-      } else if (!configData.read_db_app_api_token) {
+      } else if (!configData.apiToken) {
         isValid = false;
         Swal10.fire({
           position: 'center',
@@ -137,7 +137,7 @@ jQuery.noConflict();
           showConfirmButton: true,
         });
         $("#read_db_app_api_token").css("border-color", "red");
-      } else if (!configData.read_count_display_text) {
+      } else if (!configData.countDisplay) {
         isValid = false;
         Swal10.fire({
           position: 'center',
